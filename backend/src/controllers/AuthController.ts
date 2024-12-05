@@ -21,7 +21,6 @@ class AuthController {
       const { email, password } = req.body;
       console.log(req.body);
 
-      // Validate admin credentials
       if (
         email !== AuthController.ADMIN.email ||
         password !== AuthController.ADMIN.password
@@ -32,7 +31,6 @@ class AuthController {
         return;
       }
 
-      // Generate a JWT
       const token = jwt.sign({ role: "admin" }, "secret_key", {
         expiresIn: "1h",
       });
@@ -61,7 +59,6 @@ class AuthController {
 
       console.log(req.body);
 
-      // Validate input
       if (!username || !email || !password) {
         res
           .status(400)
@@ -69,7 +66,6 @@ class AuthController {
         return;
       }
 
-      // Check if email already exists
       const existingUser = await UserModel.findOne({ email });
       if (existingUser) {
         res
@@ -78,11 +74,9 @@ class AuthController {
         return;
       }
 
-      // Hash the password
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      // Create a new user
       const newUser = new UserModel({
         username,
         email,
@@ -91,11 +85,10 @@ class AuthController {
 
       const savedUser = await newUser.save();
 
-      // Generate JWT token
       const token = jwt.sign(
         { userId: savedUser._id, email: savedUser.email },
         JWT_SECRET,
-        { expiresIn: "1h" } // Token valid for 1 hour
+        { expiresIn: "1h" }
       );
 
       res.status(201).json({
@@ -126,7 +119,6 @@ class AuthController {
     try {
       const { email, password } = req.body;
 
-      // Find the user by email
       const user = await UserModel.findOne({ email });
       if (!user || !(await bcrypt.compare(password, user.password))) {
         res
@@ -135,8 +127,7 @@ class AuthController {
         return;
       }
 
-      // Generate a JWT
-      const token = jwt.sign({ userId: user._id }, "secret_key", {
+      const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
         expiresIn: "1h",
       });
 
