@@ -1,6 +1,5 @@
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../store/store";
-import { useState } from "react";
 import { signupUser } from "../store/authSlice";
 
 interface SignUpCredentials {
@@ -11,22 +10,22 @@ interface SignUpCredentials {
 
 const useSignup = () => {
   const dispatch: AppDispatch = useDispatch();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
 
-  const signup = async (credential: SignUpCredentials) => {
-    setLoading(true);
-    setError(null);
+  const signup = async (credentials: SignUpCredentials) => {
     try {
-      await dispatch(signupUser(credential)).unwrap();
+      const userData = await dispatch(signupUser(credentials)).unwrap();
+
+      if (userData.token) {
+        localStorage.setItem("authToken", userData.token);
+        localStorage.setItem("currentUser", JSON.stringify(userData.user));
+        return userData;
+      }
     } catch (error: any) {
-      setError(error.message || "Signup Failed");
-    } finally {
-      setLoading(false);
+      return null;
     }
   };
 
-  return { signup, error, loading };
+  return { signup };
 };
 
 export default useSignup;

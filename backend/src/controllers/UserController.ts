@@ -4,13 +4,17 @@ import { Request, Response } from "express";
 import UserModel from "../models/User";
 import bcrypt from "bcryptjs";
 import { IUser } from "../types/IUser";
+import {
+  uploadImageToCloudinary,
+  deleteImageFromCloudinary,
+} from "../utils/cloudinary";
 
 class UserController {
   // Get all Users
   public async getUsers(req: Request, res: Response): Promise<void> {
     try {
       const users = await UserModel.find();
-      res.status(200).json({ success: true, users });
+      res.status(200).json({ success: true, data: users });
     } catch (error) {
       if (error instanceof Error) {
         res.status(500).json({ success: false, message: error.message });
@@ -46,7 +50,7 @@ class UserController {
   public async createUser(req: Request, res: Response): Promise<void> {
     try {
       const { username, email, password } = req.body;
-
+      console.log(req.body);
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -129,6 +133,61 @@ class UserController {
           .status(500)
           .json({ success: false, message: "An unknown error occurred." });
       }
+    }
+  }
+
+  public async uploadProfileImage(req: Request, res: Response): Promise<void> {
+    const userId = req.params.id;
+    console.log("userId", userId);
+
+    try {
+      // Validate file
+      if (!req.file) {
+        res.status(400).json({ message: "No image file provided" });
+        return;
+      }
+
+      // Check if user exists
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+
+      // Delete existing image from Cloudinary if exists
+      if (user.profileImagePublicId) {
+        try {
+          await deleteImageFromCloudinary(user.profileImagePublicId);
+        } catch (error) {
+          console.error("Error deleting old image:", error);
+        }
+      }
+
+      // Upload new image to Cloudinary
+      const uploadResult = await uploadImageToCloudinary(
+        req.file.buffer,
+        "profile-images"
+      );
+
+      // Update user's profile image
+      user.profileImage = uploadResult.secure_url;
+      user.profileImagePublicId = uploadResult.public_id;
+      await user.save();
+
+      res
+        .status(200)
+        .json({
+          message: "Profile image updated successfully",
+          user: {
+            profileImage: user.profileImage,
+            username: user.username,
+            email: user.email,
+            id: user._id,
+          },
+        });
+    } catch (error) {
+      console.error("Error uploading profile image:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   }
 }

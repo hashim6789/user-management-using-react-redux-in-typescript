@@ -1,5 +1,3 @@
-console.log("Router loaded!");
-
 import { Router } from "express";
 const sampleRouter = Router();
 

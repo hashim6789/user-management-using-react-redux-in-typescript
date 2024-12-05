@@ -16,6 +16,14 @@ const userSchema = new Schema<IUser>({
     type: String,
     required: true,
   },
+  profileImage: {
+    type: String,
+    default: "",
+  },
+  profileImagePublicId: {
+    type: String,
+    default: "",
+  },
 });
 
 // Create and export the User model
